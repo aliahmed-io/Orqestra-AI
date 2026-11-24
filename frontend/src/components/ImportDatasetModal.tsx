@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Upload, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/primitives";
 import { useDataset } from "@/components/layout/DatasetContext";
 
@@ -18,15 +19,31 @@ export function ImportDatasetModal({
   const [processType, setProcessType] = useState("Purchase Request Approval");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
 
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) {
+      if (!dropped.name.toLowerCase().endsWith(".csv") && dropped.type !== "text/csv") {
+        setError("Please drop a valid .csv event-log file.");
+        return;
+      }
+      setError(null);
+      setFile(dropped);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setError("Select a CSV event-log file to import.");
+      setError("Select or drop a CSV event-log file to import.");
       return;
     }
     try {
@@ -127,10 +144,34 @@ export function ImportDatasetModal({
             </label>
             <label
               htmlFor="ds-file"
-              className="mt-1.5 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-soft-slate bg-porcelain px-4 py-6 text-sm text-ink-muted hover:border-indigo hover:text-ink"
+              onDragEnter={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+              }}
+              onDrop={handleDrop}
+              className={cn(
+                "mt-1.5 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed px-4 py-6 text-sm transition-colors",
+                isDragging
+                  ? "border-indigo bg-indigo-subtle/60 text-indigo"
+                  : "border-soft-slate bg-porcelain text-ink-muted hover:border-indigo hover:text-ink"
+              )}
             >
               <Upload className="h-4 w-4 text-indigo" />
-              <span>{file ? file.name : "Choose .csv file"}</span>
+              <span>
+                {file
+                  ? file.name
+                  : isDragging
+                  ? "Drop .csv file here"
+                  : "Drag & drop .csv file or click to browse"}
+              </span>
               <input
                 id="ds-file"
                 type="file"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -8,8 +8,10 @@ import {
   MarkerType,
   MiniMap,
   ReactFlow,
+  useNodesState,
   type NodeMouseHandler,
 } from "@xyflow/react";
+import { RotateCcw } from "lucide-react";
 import type { ProcessGraph, ProcessNodeData } from "@/lib/api";
 import { ActivityNode, type ActivityFlowNode } from "./ActivityNode";
 import { TransitionEdge, type TransitionFlowEdge } from "./TransitionEdge";
@@ -26,6 +28,7 @@ export function ProcessCanvas({
   highlightCommonPath: boolean;
 }) {
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<ActivityFlowNode>([]);
 
   const commonEdgeSet = useMemo(() => {
     const set = new Set<string>();
@@ -44,36 +47,62 @@ export function ProcessCanvas({
     [graph.common_path]
   );
 
-  const flowNodes: ActivityFlowNode[] = useMemo(() => {
-    return graph.nodes.map((n) => {
-      const isSelected = selectedActivity === n.activity;
-      const inCommon = highlightCommonPath && commonNodeSet.has(n.activity);
-      const connectedToSelected =
-        selectedActivity !== null &&
-        (n.activity === selectedActivity ||
-          graph.edges.some(
-            (e) =>
-              (e.source === selectedActivity && e.target === n.activity) ||
-              (e.target === selectedActivity && e.source === n.activity)
-          ));
+  // Sync nodes when graph data or highlight/selection changes, preserving user-dragged positions
+  useEffect(() => {
+    setNodes((prevNodes) => {
+      const prevPositions = new Map(
+        prevNodes.map((pn) => [pn.id, pn.position])
+      );
+      return graph.nodes.map((n) => {
+        const isSelected = selectedActivity === n.activity;
+        const inCommon = highlightCommonPath && commonNodeSet.has(n.activity);
+        const connectedToSelected =
+          selectedActivity !== null &&
+          (n.activity === selectedActivity ||
+            graph.edges.some(
+              (e) =>
+                (e.source === selectedActivity && e.target === n.activity) ||
+                (e.target === selectedActivity && e.source === n.activity)
+            ));
 
-      const dimmed =
-        (highlightCommonPath && !inCommon) ||
-        (selectedActivity !== null && !connectedToSelected);
+        const dimmed =
+          (highlightCommonPath && !inCommon) ||
+          (selectedActivity !== null && !connectedToSelected);
 
-      return {
-        id: n.id,
-        type: "activity",
-        position: { x: n.x, y: n.y },
-        selected: isSelected,
-        data: {
-          ...n,
-          highlighted: inCommon || isSelected,
-          dimmed,
-        },
-      };
+        return {
+          id: n.id,
+          type: "activity",
+          position: prevPositions.get(n.id) ?? { x: n.x, y: n.y },
+          draggable: true,
+          selected: isSelected,
+          data: {
+            ...n,
+            highlighted: inCommon || isSelected,
+            dimmed,
+          },
+        };
+      });
     });
-  }, [graph.nodes, graph.edges, selectedActivity, highlightCommonPath, commonNodeSet]);
+  }, [
+    graph.nodes,
+    graph.edges,
+    selectedActivity,
+    highlightCommonPath,
+    commonNodeSet,
+    setNodes,
+  ]);
+
+  const resetLayout = () => {
+    setNodes((prevNodes) => {
+      const deterministicMap = new Map(
+        graph.nodes.map((n) => [n.id, { x: n.x, y: n.y }])
+      );
+      return prevNodes.map((pn) => ({
+        ...pn,
+        position: deterministicMap.get(pn.id) ?? pn.position,
+      }));
+    });
+  };
 
   const flowEdges: TransitionFlowEdge[] = useMemo(() => {
     return graph.edges.map((e) => {
@@ -124,13 +153,25 @@ export function ProcessCanvas({
   return (
     <div className="flex h-[640px] w-full flex-col overflow-hidden rounded-lg border border-hairline bg-porcelain-elevated lg:flex-row">
       <div className="relative flex-1 bg-porcelain/60">
+        <button
+          type="button"
+          onClick={resetLayout}
+          title="Reset nodes to deterministic layout"
+          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-md border border-hairline bg-porcelain-elevated px-2.5 py-1.5 text-xs font-medium text-ink shadow-xs hover:bg-porcelain-recessed"
+        >
+          <RotateCcw className="h-3.5 w-3.5 text-indigo" />
+          <span>Reset Layout</span>
+        </button>
+
         <ReactFlow
-          nodes={flowNodes}
+          nodes={nodes}
           edges={flowEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
+          onNodesChange={onNodesChange}
           onNodeClick={handleNodeClick}
           onPaneClick={() => setSelectedActivity(null)}
+          nodesDraggable
           fitView
           fitViewOptions={{ padding: 0.2 }}
           minZoom={0.35}
@@ -142,7 +183,7 @@ export function ProcessCanvas({
             size={1}
             color="#D4DCE8"
           />
-          <Controls showInteractive={false} />
+          <Controls showInteractive />
           <MiniMap
             nodeColor={(n) =>
               (n.data as { is_bottleneck?: boolean })?.is_bottleneck
