@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("end-to-end navigation across Orqestra AI pages", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Executive Overview" })).toBeVisible();
-  await expect(page.getByText("Total Cases")).toBeVisible();
+  await expect(page.getByText("Total Cases").first()).toBeVisible();
 
   await page.getByRole("link", { name: "Process Discovery Studio" }).click();
   await expect(page.getByRole("heading", { name: "Process Discovery Studio" })).toBeVisible();
