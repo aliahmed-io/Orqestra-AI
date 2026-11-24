@@ -55,7 +55,7 @@ export default function BottlenecksPage() {
       <Card>
         <CardHeader>
           <CardTitle>Median vs. P90 Stage Waiting Time (Hours)</CardTitle>
-          <Badge tone="apricot">Observed Inter-Event Wait</Badge>
+          <span className="text-xs text-ink-muted">Observed Inter-Event Wait</span>
         </CardHeader>
         <CardContent>
           <BottleneckChart stages={stages} />

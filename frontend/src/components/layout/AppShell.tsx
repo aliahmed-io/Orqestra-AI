@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge, Button } from "@/components/ui/primitives";
+import { Button } from "@/components/ui/primitives";
 import { useDataset } from "./DatasetContext";
 import { ImportDatasetModal } from "@/components/ImportDatasetModal";
 
@@ -167,12 +167,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
 
             <div className="flex items-center gap-2.5">
-              <span className="hidden h-2 w-2 rounded-full bg-emerald-500 sm:inline-block" />
               <label
                 htmlFor="dataset-select"
                 className="hidden text-xs font-medium text-ink-muted sm:inline"
               >
-                Active Log:
+                Dataset
               </label>
               <select
                 id="dataset-select"
@@ -189,9 +188,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 ))}
               </select>
               {activeDataset && (
-                <Badge tone="indigo" className="hidden md:inline-flex font-mono-num">
-                  {activeDataset.row_count} events
-                </Badge>
+                <span className="hidden font-mono-num text-xs text-ink-muted md:inline">
+                  {activeDataset.row_count.toLocaleString()} events
+                </span>
               )}
             </div>
           </div>

@@ -2,13 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Network } from "lucide-react";
 import { motion } from "motion/react";
 import { api, type OverviewMetrics } from "@/lib/api";
 import { formatDurationHours, formatPct } from "@/lib/utils";
 import { useDataset } from "@/components/layout/DatasetContext";
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -73,7 +71,7 @@ export default function ExecutiveOverviewPage() {
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22 }}
+      transition={{ duration: 0.2 }}
       className="space-y-6"
     >
       {/* Header Row */}
@@ -89,15 +87,11 @@ export default function ExecutiveOverviewPage() {
         <div className="flex items-center gap-3">
           <Link href="/predictions">
             <Button variant="secondary" size="md">
-              <span>View Delay Risk</span>
+              View Delay Risk
             </Button>
           </Link>
           <Link href="/studio">
-            <Button size="md">
-              <Network className="h-4 w-4" />
-              <span>Open Process Studio</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            <Button size="md">Open Process Studio</Button>
           </Link>
         </div>
       </div>
@@ -109,7 +103,7 @@ export default function ExecutiveOverviewPage() {
           <div className="mt-1.5 font-mono-num text-2xl font-bold text-ink">
             {overview.total_cases}
           </div>
-          <div className="mt-1 text-[11px] text-ink-muted">
+          <div className="mt-1 text-xs text-ink-muted">
             {overview.open_cases} in progress
           </div>
         </div>
@@ -118,8 +112,8 @@ export default function ExecutiveOverviewPage() {
           <div className="mt-1.5 font-mono-num text-2xl font-bold text-indigo">
             {overview.completed_cases}
           </div>
-          <div className="mt-1 text-[11px] text-ink-muted">
-            {overview.rejected_cases} rejected · {overview.cancelled_cases} cancelled
+          <div className="mt-1 text-xs text-ink-muted">
+            {overview.rejected_cases} rejected, {overview.cancelled_cases} cancelled
           </div>
         </div>
         <div className="p-5">
@@ -127,16 +121,16 @@ export default function ExecutiveOverviewPage() {
           <div className="mt-1.5 font-mono-num text-2xl font-bold text-ink">
             {formatDurationHours(overview.median_cycle_time_hours)}
           </div>
-          <div className="mt-1 font-mono-num text-[11px] text-ink-muted">
+          <div className="mt-1 font-mono-num text-xs text-ink-muted">
             P90: {formatDurationHours(overview.p90_cycle_time_hours)}
           </div>
         </div>
-        <div className="p-5 bg-apricot-subtle/35">
+        <div className="bg-apricot-subtle/35 p-5">
           <div className="text-xs font-medium text-ink-muted">Delayed Cases</div>
           <div className="mt-1.5 font-mono-num text-2xl font-bold text-ink">
             {formatPct(overview.delayed_rate)}
           </div>
-          <div className="mt-1 font-mono-num text-[11px] text-ink-muted">
+          <div className="mt-1 font-mono-num text-xs text-ink-muted">
             {overview.delayed_cases} cases over SLA
           </div>
         </div>
@@ -145,18 +139,18 @@ export default function ExecutiveOverviewPage() {
           <div className="mt-1.5 font-mono-num text-2xl font-bold text-ink">
             {formatPct(overview.rework_frequency)}
           </div>
-          <div className="mt-1 font-mono-num text-[11px] text-ink-muted">
+          <div className="mt-1 font-mono-num text-xs text-ink-muted">
             {overview.rework_cases} cases looped
           </div>
         </div>
       </Card>
 
-      {/* Main Bento Grid: Trend + Outcome Gauge + Bottleneck Spotlight */}
+      {/* Main Grid: Trend + Outcome Gauge */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-8">
           <CardHeader>
             <CardTitle>Process Volume & Delay Trend</CardTitle>
-            <Badge tone="neutral">Weekly cohorts</Badge>
+            <span className="text-xs text-ink-muted">Weekly cohorts</span>
           </CardHeader>
           <CardContent>
             <CompletionTrendChart data={overview.completion_trend} />
@@ -167,7 +161,6 @@ export default function ExecutiveOverviewPage() {
           <Card>
             <CardHeader>
               <CardTitle>Case Outcome Distribution</CardTitle>
-              <Badge tone="indigo">Live</Badge>
             </CardHeader>
             <CardContent className="pt-4 pb-5">
               <OutcomeArcGauge
@@ -176,7 +169,7 @@ export default function ExecutiveOverviewPage() {
                 other={otherClosed}
                 total={overview.total_cases}
               />
-              <div className="mt-2 text-center text-[10px] text-ink-muted">
+              <div className="mt-2 text-center text-[11px] text-ink-muted">
                 *Closed includes rejected & cancelled cases
               </div>
             </CardContent>
@@ -184,15 +177,14 @@ export default function ExecutiveOverviewPage() {
         </div>
       </div>
 
-      {/* Bottom Bento: Primary Bottleneck Spotlight + Activity Coverage */}
+      {/* Bottom Grid: Primary Bottleneck + Activity Coverage */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <Card className="flex flex-col justify-between border-l-4 border-l-apricot p-6 lg:col-span-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-ink-muted">
-              <AlertTriangle className="h-3.5 w-3.5 text-apricot" />
-              <span>Primary Bottleneck Stage</span>
+            <div className="text-xs font-medium text-ink-muted">
+              Primary Bottleneck Stage
             </div>
-            <div className="mt-3 font-display text-2xl font-bold text-ink">
+            <div className="mt-2 font-display text-2xl font-bold text-ink">
               {overview.main_bottleneck_stage ?? "None detected"}
             </div>
             <p className="mt-2 text-sm text-ink-muted">

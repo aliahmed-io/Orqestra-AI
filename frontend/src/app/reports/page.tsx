@@ -82,7 +82,7 @@ export default function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Report Content Preview — {activeDataset.name}</CardTitle>
-          <Badge tone="indigo">Live Derived Metrics</Badge>
+          <span className="text-xs text-ink-muted">{activeDataset.process_type}</span>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-md bg-porcelain p-4">

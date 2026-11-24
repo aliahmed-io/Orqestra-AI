@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Lightbulb } from "lucide-react";
 import { api, type Recommendation } from "@/lib/api";
 import { useDataset } from "@/components/layout/DatasetContext";
 import { Badge, Card, LoadingPanel } from "@/components/ui/primitives";
@@ -48,14 +47,13 @@ export default function RecommendationsPage() {
         {recs.map((rec) => (
           <Card key={rec.id} className="p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <Lightbulb className="h-4 w-4 text-indigo" />
-                <h2 className="font-display text-base font-semibold text-ink">
-                  {rec.title}
-                </h2>
-              </div>
+              <h2 className="font-display text-base font-semibold text-ink">
+                {rec.title}
+              </h2>
               <div className="flex items-center gap-2">
-                <Badge tone="neutral">{rec.category}</Badge>
+                <span className="text-xs font-medium text-ink-muted">
+                  {rec.category}
+                </span>
                 <Badge
                   tone={
                     rec.severity === "high"

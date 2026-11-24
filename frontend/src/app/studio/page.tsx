@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
 import { api, type ProcessGraph } from "@/lib/api";
 import { useDataset } from "@/components/layout/DatasetContext";
-import { Badge, Button, Card, LoadingPanel } from "@/components/ui/primitives";
+import { Button, Card, LoadingPanel } from "@/components/ui/primitives";
 import { ProcessCanvas } from "@/components/studio/ProcessCanvas";
 
 export default function ProcessStudioPage() {
@@ -55,29 +54,27 @@ export default function ProcessStudioPage() {
             Process Discovery Studio
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Interactive Directly-Follows Graph reconstructed deterministically from
-            imported event sequences. Click any stage to inspect transitions.
+            Directly-Follows Graph reconstructed from imported event sequences.
+            Drag stages to arrange or select any stage to inspect transitions.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            size="sm"
-            variant={highlightCommon ? "primary" : "secondary"}
-            onClick={() => setHighlightCommon((v) => !v)}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>
-              {highlightCommon ? "Showing Common Path" : "Highlight Common Path"}
-            </span>
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant={highlightCommon ? "primary" : "secondary"}
+          onClick={() => setHighlightCommon((v) => !v)}
+        >
+          {highlightCommon ? "Showing Common Path" : "Highlight Common Path"}
+        </Button>
       </div>
 
       {/* Filter & Density Controls */}
-      <Card className="flex flex-wrap items-center gap-5 px-5 py-3.5">
+      <Card className="flex flex-wrap items-center gap-6 px-5 py-3">
         <div className="flex items-center gap-2">
-          <label htmlFor="studio-dept" className="text-xs font-medium text-ink-muted">
+          <label
+            htmlFor="studio-dept"
+            className="text-xs font-medium text-ink-muted"
+          >
             Department
           </label>
           <select
@@ -96,7 +93,10 @@ export default function ProcessStudioPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <label htmlFor="studio-ptype" className="text-xs font-medium text-ink-muted">
+          <label
+            htmlFor="studio-ptype"
+            className="text-xs font-medium text-ink-muted"
+          >
             Process Type
           </label>
           <select
@@ -115,7 +115,10 @@ export default function ProcessStudioPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <label htmlFor="studio-detail" className="text-xs font-medium text-ink-muted">
+          <label
+            htmlFor="studio-detail"
+            className="text-xs font-medium text-ink-muted"
+          >
             Min Path Frequency
           </label>
           <input
@@ -134,9 +137,18 @@ export default function ProcessStudioPage() {
         </div>
 
         {graph && (
-          <div className="ml-auto flex items-center gap-2">
-            <Badge tone="indigo">{graph.total_cases_in_filter} cases</Badge>
-            <Badge tone="apricot">Apricot = Bottleneck / Rework</Badge>
+          <div className="ml-auto flex items-center gap-4 text-xs text-ink-muted">
+            <span className="font-mono-num font-medium text-ink">
+              {graph.total_cases_in_filter} cases
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-xs bg-indigo" />
+              Standard
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-xs bg-apricot" />
+              Bottleneck / Rework
+            </span>
           </div>
         )}
       </Card>

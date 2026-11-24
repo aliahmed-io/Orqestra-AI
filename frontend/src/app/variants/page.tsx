@@ -72,9 +72,9 @@ export default function VariantsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Visual Variant Comparison</CardTitle>
-            <Badge tone="indigo">
+            <span className="text-xs text-ink-muted">
               Comparing {compared.length} variant{compared.length > 1 ? "s" : ""}
-            </Badge>
+            </span>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {compared.map((v) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { RefreshCw, ShieldCheck } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { api, type PredictionsDashboard } from "@/lib/api";
 import { formatDurationHours, formatPct } from "@/lib/utils";
 import { useDataset } from "@/components/layout/DatasetContext";
@@ -75,16 +75,13 @@ export default function PredictionsPage() {
       </div>
 
       {/* Leakage Guard & Delay Definition */}
-      <Card className="border-l-4 border-l-indigo bg-indigo-subtle/40 p-4 text-xs text-ink">
-        <div className="flex items-start gap-2.5">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-indigo" />
-          <div className="space-y-1">
-            <div>
-              <strong>Delay Label:</strong> {data.delay_definition}
-            </div>
-            <div className="text-ink-muted">
-              <strong>Evaluation & Leakage Guard:</strong> {data.leakage_guard}
-            </div>
+      <Card className="border-l-4 border-l-indigo bg-porcelain-elevated p-4 text-xs text-ink">
+        <div className="space-y-1">
+          <div>
+            <strong>Delay Label:</strong> {data.delay_definition}
+          </div>
+          <div className="text-ink-muted">
+            <strong>Evaluation & Leakage Guard:</strong> {data.leakage_guard}
           </div>
         </div>
       </Card>
