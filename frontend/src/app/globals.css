@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+@theme inline {
+  --font-display: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --color-porcelain: #f5f3ee;
+  --color-porcelain-elevated: #ffffff;
+  --color-porcelain-recessed: #ece8df;
+  --color-indigo: #354d8a;
+  --color-indigo-hover: #2a3e70;
+  --color-indigo-subtle: #ebf0f9;
+  --color-soft-slate: #a9b6ce;
+  --color-apricot: #ed9d78;
+  --color-apricot-subtle: #fdf1eb;
+  --color-ink: #242b3a;
+  --color-ink-muted: #5a657a;
+  --color-hairline: #e2ddd3;
+}
+
+html,
+body {
+  background-color: #f5f3ee;
+  color: #242b3a;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-mono-num {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom React Flow architectural overrides */
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__controls {
+  box-shadow: 0 1px 3px rgba(36, 43, 58, 0.08);
+  border: 1px solid #e2ddd3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: #ffffff;
+  border-bottom: 1px solid #e2ddd3;
+  color: #242b3a;
+}
+
+.react-flow__controls-button:hover {
+  background: #f5f3ee;
+}
