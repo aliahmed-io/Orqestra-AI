@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ArrowRight, X } from "lucide-react";
+import { motion } from "motion/react";
 import type { ProcessEdgeData, ProcessNodeData } from "@/lib/api";
 import { formatDurationHours, formatPct } from "@/lib/utils";
 import { Badge } from "@/components/ui/primitives";
@@ -19,16 +20,19 @@ export function ActivityInspector({
   const outgoing = edges.filter((e) => e.source === node.activity);
 
   return (
-    <aside
+    <motion.aside
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.18 }}
       aria-label="Activity Inspector"
       className="flex h-full w-full flex-col border-l border-hairline bg-porcelain-elevated p-5 lg:w-80"
     >
       <div className="flex items-start justify-between border-b border-hairline pb-4">
         <div>
-          <div className="text-xs font-medium text-ink-muted">
+          <div className="text-[11px] font-semibold text-ink-muted">
             Stage Inspection
           </div>
-          <h3 className="mt-1 font-display text-base font-semibold text-ink">
+          <h3 className="mt-1 font-display text-base font-bold text-ink">
             {node.activity}
           </h3>
         </div>
@@ -49,7 +53,7 @@ export function ActivityInspector({
         )}
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-md bg-porcelain p-3.5 text-xs">
+      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-md border border-hairline bg-porcelain p-3.5 text-xs">
         <div>
           <dt className="text-ink-muted">Cases</dt>
           <dd className="mt-0.5 font-mono-num text-sm font-semibold text-ink">
@@ -76,19 +80,21 @@ export function ActivityInspector({
         </div>
       </dl>
 
-      <div className="mt-5 flex-1 space-y-5 overflow-y-auto">
+      <div className="mt-5 flex-1 space-y-5 overflow-y-auto pr-1">
         <div>
           <h4 className="text-xs font-semibold text-ink">
             Outgoing Transitions ({outgoing.length})
           </h4>
           <div className="mt-2 space-y-2">
             {outgoing.length === 0 ? (
-              <p className="text-xs text-ink-muted">Terminal stage (no outgoing transitions).</p>
+              <p className="text-xs text-ink-muted">
+                Terminal stage (no outgoing transitions).
+              </p>
             ) : (
               outgoing.map((e) => (
                 <div
                   key={e.id}
-                  className="rounded-md border border-hairline bg-white p-2.5 text-xs"
+                  className="rounded-md border border-hairline bg-white p-2.5 text-xs transition-colors hover:border-soft-slate"
                 >
                   <div className="flex items-center justify-between font-medium text-ink">
                     <span className="flex items-center gap-1.5">
@@ -117,12 +123,14 @@ export function ActivityInspector({
           </h4>
           <div className="mt-2 space-y-2">
             {incoming.length === 0 ? (
-              <p className="text-xs text-ink-muted">Entry stage (no incoming transitions).</p>
+              <p className="text-xs text-ink-muted">
+                Entry stage (no incoming transitions).
+              </p>
             ) : (
               incoming.map((e) => (
                 <div
                   key={e.id}
-                  className="rounded-md border border-hairline bg-white p-2.5 text-xs"
+                  className="rounded-md border border-hairline bg-white p-2.5 text-xs transition-colors hover:border-soft-slate"
                 >
                   <div className="flex items-center justify-between font-medium text-ink">
                     <span>{e.source}</span>
@@ -142,6 +150,6 @@ export function ActivityInspector({
           </div>
         </div>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

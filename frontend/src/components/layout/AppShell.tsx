@@ -21,15 +21,30 @@ import { Badge, Button } from "@/components/ui/primitives";
 import { useDataset } from "./DatasetContext";
 import { ImportDatasetModal } from "@/components/ImportDatasetModal";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Executive Overview", icon: LayoutDashboard },
-  { href: "/studio", label: "Process Discovery Studio", icon: Network },
-  { href: "/cases", label: "Case Explorer", icon: ListChecks },
-  { href: "/bottlenecks", label: "Bottleneck Intelligence", icon: AlertTriangle },
-  { href: "/variants", label: "Variant Explorer", icon: GitBranch },
-  { href: "/predictions", label: "AI Delay Prediction", icon: Activity },
-  { href: "/recommendations", label: "Recommendations", icon: Lightbulb },
-  { href: "/reports", label: "Reports", icon: FileText },
+const NAV_GROUPS = [
+  {
+    title: "Discovery",
+    items: [
+      { href: "/", label: "Executive Overview", icon: LayoutDashboard },
+      { href: "/studio", label: "Process Discovery Studio", icon: Network },
+      { href: "/cases", label: "Case Explorer", icon: ListChecks },
+    ],
+  },
+  {
+    title: "Intelligence",
+    items: [
+      { href: "/bottlenecks", label: "Bottleneck Intelligence", icon: AlertTriangle },
+      { href: "/variants", label: "Variant Explorer", icon: GitBranch },
+      { href: "/predictions", label: "AI Delay Prediction", icon: Activity },
+    ],
+  },
+  {
+    title: "Governance",
+    items: [
+      { href: "/recommendations", label: "Recommendations", icon: Lightbulb },
+      { href: "/reports", label: "Reports", icon: FileText },
+    ],
+  },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -39,12 +54,54 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [importOpen, setImportOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  const renderNav = (onNavigate?: () => void) => (
+    <nav className="flex-1 space-y-6 px-3 py-5" aria-label="Primary Navigation">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.title}>
+          <div className="px-3 pb-2 text-[11px] font-semibold text-ink-muted/80">
+            {group.title}
+          </div>
+          <div className="space-y-0.5">
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-indigo-subtle text-indigo font-semibold"
+                      : "text-ink-muted hover:bg-porcelain hover:text-ink"
+                  )}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-indigo" />
+                  )}
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      active ? "text-indigo" : "text-ink-muted"
+                    )}
+                  />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+
   return (
     <div className="flex min-h-screen bg-porcelain text-ink">
       {/* Desktop Sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-hairline bg-porcelain-elevated lg:flex">
         <div className="flex h-16 items-center gap-3 border-b border-hairline px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo text-white shadow-xs">
             <Network className="h-4 w-4" />
           </div>
           <div>
@@ -57,31 +114,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 p-3" aria-label="Primary Navigation">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-indigo text-white"
-                    : "text-ink-muted hover:bg-porcelain-recessed hover:text-ink"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {renderNav()}
 
         <div className="border-t border-hairline p-4">
-          <div className="rounded-md bg-porcelain p-3 text-xs text-ink-muted">
-            <div className="font-medium text-ink">Measurement Scope</div>
+          <div className="rounded-md border border-hairline/80 bg-porcelain p-3 text-[11px] text-ink-muted">
+            <div className="font-semibold text-ink">Measurement Scope</div>
             <p className="mt-1 leading-relaxed">
               Single-timestamp logs measure observed inter-event waiting time, not
               hands-on working time.
@@ -94,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div
-            className="fixed inset-0 bg-ink/40"
+            className="fixed inset-0 bg-ink/40 backdrop-blur-[1px]"
             onClick={() => setMobileNavOpen(false)}
           />
           <aside className="relative z-10 flex w-64 flex-col bg-porcelain-elevated shadow-xl">
@@ -111,35 +148,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <nav className="flex-1 space-y-1 p-3">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileNavOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium",
-                      active
-                        ? "bg-indigo text-white"
-                        : "text-ink-muted hover:bg-porcelain-recessed hover:text-ink"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
+            {renderNav(() => setMobileNavOpen(false))}
           </aside>
         </div>
       )}
 
       {/* Main Content Column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-hairline bg-porcelain-elevated px-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-hairline bg-porcelain-elevated/95 px-4 backdrop-blur-xs sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -150,12 +166,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Menu className="h-5 w-5" />
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              <span className="hidden h-2 w-2 rounded-full bg-emerald-500 sm:inline-block" />
               <label
                 htmlFor="dataset-select"
                 className="hidden text-xs font-medium text-ink-muted sm:inline"
               >
-                Dataset:
+                Active Log:
               </label>
               <select
                 id="dataset-select"
@@ -163,7 +180,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 disabled={loading || datasets.length === 0}
                 value={activeDatasetId ?? ""}
                 onChange={(e) => setActiveDatasetId(Number(e.target.value))}
-                className="h-9 max-w-[260px] rounded-md border border-hairline bg-porcelain px-3 text-sm font-medium text-ink focus:border-indigo focus:outline-none"
+                className="h-9 max-w-[270px] rounded-md border border-hairline bg-porcelain px-3 text-sm font-medium text-ink focus:border-indigo focus:outline-none"
               >
                 {datasets.map((ds) => (
                   <option key={ds.id} value={ds.id}>
@@ -172,7 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 ))}
               </select>
               {activeDataset && (
-                <Badge tone="indigo" className="hidden md:inline-flex">
+                <Badge tone="indigo" className="hidden md:inline-flex font-mono-num">
                   {activeDataset.row_count} events
                 </Badge>
               )}
@@ -185,13 +202,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               variant="secondary"
               onClick={() => setImportOpen(true)}
             >
-              <Upload className="h-3.5 w-3.5" />
+              <Upload className="h-3.5 w-3.5 text-indigo" />
               <span>Import Event Log</span>
             </Button>
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1440px] flex-1 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
 
       <ImportDatasetModal

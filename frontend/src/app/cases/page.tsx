@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, X } from "lucide-react";
+import { RotateCcw, Search, X } from "lucide-react";
 import { api, type CaseDetail, type PaginatedCases } from "@/lib/api";
 import { formatDurationHours, formatTimestamp } from "@/lib/utils";
 import { useDataset } from "@/components/layout/DatasetContext";
@@ -66,6 +66,13 @@ export default function CaseExplorerPage() {
     }
   };
 
+  const maxWaitInSelected = selectedCase
+    ? Math.max(
+        1,
+        ...selectedCase.events.map((e) => e.wait_from_prev_hours ?? 0)
+      )
+    : 1;
+
   return (
     <div className="space-y-5">
       <div>
@@ -73,14 +80,14 @@ export default function CaseExplorerPage() {
           Case Explorer
         </h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Inspect individual process instances, event timelines, and deviations from
-          the standard workflow variant.
+          Inspect individual process instances, inter-event waiting timelines, and
+          deviations from the standard workflow variant.
         </p>
       </div>
 
       {/* Filters */}
       <Card className="flex flex-wrap items-center gap-4 px-5 py-4">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-ink-muted" />
           <input
             type="text"
@@ -143,7 +150,13 @@ export default function CaseExplorerPage() {
       </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className={selectedCase ? "lg:col-span-2 overflow-hidden" : "lg:col-span-3 overflow-hidden"}>
+        <Card
+          className={
+            selectedCase
+              ? "overflow-hidden lg:col-span-2"
+              : "overflow-hidden lg:col-span-3"
+          }
+        >
           {loading || !casesPage ? (
             <LoadingPanel label="Loading cases..." />
           ) : (
@@ -155,59 +168,79 @@ export default function CaseExplorerPage() {
                       <th className="px-5 py-3">Case ID</th>
                       <th className="px-4 py-3">Department</th>
                       <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Steps</th>
                       <th className="px-4 py-3">Cycle Time</th>
-                      <th className="px-4 py-3">Rework</th>
                       <th className="px-4 py-3">Delay</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-hairline">
-                    {casesPage.items.map((c) => (
-                      <tr
-                        key={c.id}
-                        onClick={() => void inspectCase(c.id)}
-                        className="cursor-pointer transition-colors hover:bg-porcelain/70"
-                      >
-                        <td className="px-5 py-3 font-mono-num font-semibold text-indigo">
-                          {c.case_key}
-                        </td>
-                        <td className="px-4 py-3 text-ink">
-                          {c.department ?? "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            tone={
-                              c.status === "completed"
-                                ? "success"
-                                : c.status === "open"
-                                ? "indigo"
-                                : "danger"
-                            }
-                          >
-                            {c.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 font-mono-num text-ink">
-                          {formatDurationHours(c.cycle_time_hours)}
-                        </td>
-                        <td className="px-4 py-3 font-mono-num text-ink">
-                          {c.rework_count}
-                        </td>
-                        <td className="px-4 py-3">
-                          {c.is_delayed ? (
-                            <Badge tone="apricot">Delayed</Badge>
-                          ) : (
-                            <span className="text-xs text-ink-muted">On track</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {casesPage.items.map((c) => {
+                      const isActive = selectedCase?.id === c.id;
+                      return (
+                        <tr
+                          key={c.id}
+                          onClick={() => void inspectCase(c.id)}
+                          className={`cursor-pointer transition-colors ${
+                            isActive
+                              ? "bg-indigo-subtle/40"
+                              : "hover:bg-porcelain/70"
+                          }`}
+                        >
+                          <td className="px-5 py-3 font-mono-num font-semibold text-indigo">
+                            {c.case_key}
+                          </td>
+                          <td className="px-4 py-3 text-ink">
+                            {c.department ?? "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              tone={
+                                c.status === "completed"
+                                  ? "success"
+                                  : c.status === "open"
+                                  ? "indigo"
+                                  : "danger"
+                              }
+                            >
+                              {c.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2 font-mono-num text-xs text-ink">
+                              <span>{c.event_count}</span>
+                              {c.rework_count > 0 && (
+                                <span
+                                  title={`${c.rework_count} rework loop(s)`}
+                                  className="inline-flex items-center gap-0.5 rounded bg-apricot-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink"
+                                >
+                                  <RotateCcw className="h-2.5 w-2.5 text-apricot" />
+                                  {c.rework_count}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-mono-num text-ink">
+                            {formatDurationHours(c.cycle_time_hours)}
+                          </td>
+                          <td className="px-4 py-3">
+                            {c.is_delayed ? (
+                              <Badge tone="apricot">Delayed</Badge>
+                            ) : (
+                              <span className="text-xs text-ink-muted">
+                                On track
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               <div className="flex items-center justify-between border-t border-hairline px-5 py-3 text-xs text-ink-muted">
                 <span>
-                  Showing page {casesPage.page} of {casesPage.total_pages} (
+                  Page {casesPage.page} of {casesPage.total_pages} (
                   {casesPage.total} cases)
                 </span>
                 <div className="flex gap-2">
@@ -261,13 +294,17 @@ export default function CaseExplorerPage() {
                 </div>
 
                 {/* Variant comparison */}
-                <div className="rounded-md bg-porcelain p-3 text-xs">
+                <div className="rounded-md border border-hairline bg-porcelain p-3 text-xs">
                   <div className="font-semibold text-ink">
                     Variant Alignment:{" "}
                     {selectedCase.matches_common_variant ? (
-                      <span className="text-emerald-700">Matches Standard Path</span>
+                      <span className="text-emerald-700">
+                        Matches Standard Path
+                      </span>
                     ) : (
-                      <span className="text-amber-700">Deviates from Standard</span>
+                      <span className="text-amber-700">
+                        Deviates from Standard
+                      </span>
                     )}
                   </div>
                   {selectedCase.deviations.length > 0 && (
@@ -279,30 +316,48 @@ export default function CaseExplorerPage() {
                   )}
                 </div>
 
-                {/* Chronological Event Timeline */}
+                {/* Chronological Event Timeline with proportional wait bars */}
                 <div>
                   <h4 className="text-xs font-semibold text-ink">
                     Event Timeline ({selectedCase.events.length} events)
                   </h4>
-                  <ol className="mt-3 space-y-3 border-l-2 border-soft-slate pl-4">
-                    {selectedCase.events.map((ev) => (
-                      <li key={ev.id} className="relative text-xs">
-                        <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-indigo" />
-                        <div className="flex items-center justify-between font-semibold text-ink">
-                          <span>{ev.activity}</span>
-                          {ev.wait_from_prev_hours !== null && (
-                            <span className="font-mono-num text-[11px] text-ink-muted">
-                              +{formatDurationHours(ev.wait_from_prev_hours)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 text-[11px] text-ink-muted">
-                          {formatTimestamp(ev.timestamp)}
-                          {ev.assigned_role ? ` · ${ev.assigned_role}` : ""}
-                          {ev.outcome ? ` · ${ev.outcome}` : ""}
-                        </div>
-                      </li>
-                    ))}
+                  <ol className="mt-3 space-y-3.5 border-l-2 border-soft-slate pl-4">
+                    {selectedCase.events.map((ev) => {
+                      const waitPct =
+                        ev.wait_from_prev_hours !== null
+                          ? Math.min(
+                              100,
+                              (ev.wait_from_prev_hours / maxWaitInSelected) * 100
+                            )
+                          : 0;
+                      return (
+                        <li key={ev.id} className="relative text-xs">
+                          <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-indigo" />
+                          <div className="flex items-center justify-between font-semibold text-ink">
+                            <span>{ev.activity}</span>
+                            {ev.wait_from_prev_hours !== null && (
+                              <span className="font-mono-num text-[11px] text-ink-muted">
+                                +{formatDurationHours(ev.wait_from_prev_hours)}
+                              </span>
+                            )}
+                          </div>
+                          {ev.wait_from_prev_hours !== null &&
+                            ev.wait_from_prev_hours > 0 && (
+                              <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-porcelain-recessed">
+                                <div
+                                  className="h-full rounded-full bg-apricot"
+                                  style={{ width: `${waitPct}%` }}
+                                />
+                              </div>
+                            )}
+                          <div className="mt-1 text-[11px] text-ink-muted">
+                            {formatTimestamp(ev.timestamp)}
+                            {ev.assigned_role ? ` · ${ev.assigned_role}` : ""}
+                            {ev.outcome ? ` · ${ev.outcome}` : ""}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ol>
                 </div>
               </div>

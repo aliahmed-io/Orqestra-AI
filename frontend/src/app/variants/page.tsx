@@ -53,6 +53,7 @@ export default function VariantsPage() {
   }
 
   const compared = variants.filter((v) => selectedIds.includes(v.variant_id));
+  const goldenMedian = variants[0]?.median_cycle_time_hours ?? 0;
 
   return (
     <div className="space-y-6">
@@ -61,8 +62,8 @@ export default function VariantsPage() {
           Process Variant Explorer
         </h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Cases grouped by exact observed activity sequence. Select up to two
-          variants below to compare paths side by side.
+          Cases grouped by exact observed activity sequence. Click any two
+          variants below to compare paths and cycle-time deltas side by side.
         </p>
       </div>
 
@@ -76,40 +77,50 @@ export default function VariantsPage() {
             </Badge>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {compared.map((v) => (
-              <div
-                key={v.variant_id}
-                className="rounded-lg border border-hairline bg-porcelain p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono-num text-sm font-bold text-indigo">
-                    {v.variant_id}
-                  </span>
-                  <span className="font-mono-num text-xs text-ink-muted">
-                    {v.case_count} cases ({formatPct(v.case_percentage)}) · Median{" "}
-                    {formatDurationHours(v.median_cycle_time_hours)}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  {v.activities.map((act, idx) => (
-                    <React.Fragment key={`${v.variant_id}-${idx}`}>
-                      <span className="rounded border border-hairline bg-white px-2.5 py-1 text-xs font-medium text-ink">
-                        {act}
+            {compared.map((v) => {
+              const delta = v.median_cycle_time_hours - goldenMedian;
+              return (
+                <div
+                  key={v.variant_id}
+                  className="rounded-lg border border-hairline bg-porcelain p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono-num text-sm font-bold text-indigo">
+                        {v.variant_id}
                       </span>
-                      {idx < v.activities.length - 1 && (
-                        <ArrowRight className="h-3.5 w-3.5 text-soft-slate" />
+                      {delta > 0.5 && (
+                        <Badge tone="apricot">
+                          +{formatDurationHours(delta)} vs standard
+                        </Badge>
                       )}
-                    </React.Fragment>
-                  ))}
+                    </div>
+                    <span className="font-mono-num text-xs text-ink-muted">
+                      {v.case_count} cases ({formatPct(v.case_percentage)}) ·
+                      Median {formatDurationHours(v.median_cycle_time_hours)}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    {v.activities.map((act, idx) => (
+                      <React.Fragment key={`${v.variant_id}-${idx}`}>
+                        <span className="rounded border border-hairline bg-white px-2.5 py-1 text-xs font-medium text-ink shadow-2xs">
+                          {act}
+                        </span>
+                        {idx < v.activities.length - 1 && (
+                          <ArrowRight className="h-3.5 w-3.5 text-soft-slate" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-4 border-t border-hairline/70 pt-2.5 font-mono-num text-xs text-ink-muted">
+                    <span>Delayed: {formatPct(v.delayed_rate)}</span>
+                    <span>Avg Rework: {v.avg_rework_count}</span>
+                    <span>Completed: {v.completed_count}</span>
+                    <span>Rejected: {v.rejected_count}</span>
+                  </div>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-3 text-xs text-ink-muted">
-                  <span>Delayed: {formatPct(v.delayed_rate)}</span>
-                  <span>Avg Rework: {v.avg_rework_count}</span>
-                  <span>Completed: {v.completed_count}</span>
-                  <span>Rejected: {v.rejected_count}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
@@ -118,58 +129,80 @@ export default function VariantsPage() {
       <div className="space-y-3">
         {variants.map((v, idx) => {
           const isSelected = selectedIds.includes(v.variant_id);
+          const delta = v.median_cycle_time_hours - goldenMedian;
           return (
             <Card
               key={v.variant_id}
               onClick={() => toggleSelect(v.variant_id)}
-              className={`cursor-pointer p-5 transition-colors ${
-                isSelected ? "border-indigo ring-1 ring-indigo/30" : "hover:bg-white/80"
+              className={`cursor-pointer overflow-hidden transition-all ${
+                isSelected
+                  ? "border-indigo ring-1 ring-indigo/30 shadow-sm"
+                  : "hover:border-soft-slate"
               }`}
             >
-              <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono-num text-sm font-bold text-indigo">
-                    {v.variant_id}
-                  </span>
-                  {idx === 0 && <Badge tone="indigo">Standard Path</Badge>}
-                  {v.avg_rework_count > 0 && (
-                    <Badge tone="apricot">Rework Variant</Badge>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-5 font-mono-num text-xs text-ink">
-                  <div>
-                    <span className="text-ink-muted">Cases: </span>
-                    <strong>
-                      {v.case_count} ({formatPct(v.case_percentage)})
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-ink-muted">Median: </span>
-                    <strong>{formatDurationHours(v.median_cycle_time_hours)}</strong>
-                  </div>
-                  <div>
-                    <span className="text-ink-muted">Delayed: </span>
-                    <strong>{formatPct(v.delayed_rate)}</strong>
-                  </div>
-                  <div>
-                    <span className="text-ink-muted">Completed: </span>
-                    <strong>{v.completed_count}</strong>
-                  </div>
-                </div>
+              {/* Proportional volume bar */}
+              <div className="h-1 w-full bg-porcelain-recessed">
+                <div
+                  className={`h-full ${
+                    v.avg_rework_count > 0 ? "bg-apricot" : "bg-indigo"
+                  }`}
+                  style={{ width: `${Math.min(100, v.case_percentage)}%` }}
+                />
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                {v.activities.map((act, i) => (
-                  <React.Fragment key={`${v.variant_id}-row-${i}`}>
-                    <span className="rounded bg-porcelain px-2 py-0.5 text-xs text-ink">
-                      {act}
+              <div className="p-5">
+                <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="font-mono-num text-sm font-bold text-indigo">
+                      {v.variant_id}
                     </span>
-                    {i < v.activities.length - 1 && (
-                      <ArrowRight className="h-3 w-3 text-soft-slate" />
+                    {idx === 0 && <Badge tone="indigo">Standard Path</Badge>}
+                    {v.avg_rework_count > 0 && (
+                      <Badge tone="apricot">Rework Variant</Badge>
                     )}
-                  </React.Fragment>
-                ))}
+                    {idx > 0 && delta > 0.5 && (
+                      <span className="font-mono-num text-xs text-amber-700">
+                        +{formatDurationHours(delta)} slower
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-5 font-mono-num text-xs text-ink">
+                    <div>
+                      <span className="text-ink-muted">Cases: </span>
+                      <strong>
+                        {v.case_count} ({formatPct(v.case_percentage)})
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-ink-muted">Median: </span>
+                      <strong>
+                        {formatDurationHours(v.median_cycle_time_hours)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-ink-muted">Delayed: </span>
+                      <strong>{formatPct(v.delayed_rate)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-ink-muted">Completed: </span>
+                      <strong>{v.completed_count}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  {v.activities.map((act, i) => (
+                    <React.Fragment key={`${v.variant_id}-row-${i}`}>
+                      <span className="rounded border border-hairline/80 bg-porcelain px-2 py-0.5 text-xs text-ink">
+                        {act}
+                      </span>
+                      {i < v.activities.length - 1 && (
+                        <ArrowRight className="h-3 w-3 text-soft-slate" />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
             </Card>
           );
