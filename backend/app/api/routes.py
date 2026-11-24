@@ -122,7 +122,18 @@ def get_dataset_filters(dataset_id: int, db: Session = Depends(get_db)) -> dict:
         r[0]
         for r in db.query(ProcessCase.process_type).filter(ProcessCase.dataset_id == dataset_id).distinct().all()
     ]
-    return {"departments": sorted(depts), "process_types": sorted(ptypes)}
+    times = [
+        r[0]
+        for r in db.query(ProcessCase.start_time).filter(ProcessCase.dataset_id == dataset_id, ProcessCase.start_time.isnot(None)).all()
+    ]
+    min_date = min(times).strftime("%Y-%m-%d") if times else None
+    max_date = max(times).strftime("%Y-%m-%d") if times else None
+    return {
+        "departments": sorted(depts),
+        "process_types": sorted(ptypes),
+        "min_date": min_date,
+        "max_date": max_date,
+    }
 
 
 @router.get("/datasets/{dataset_id}/graph", response_model=ProcessGraphOut)
@@ -131,6 +142,8 @@ def get_process_graph(
     department: Optional[str] = Query(None),
     process_type: Optional[str] = Query(None),
     min_case_pct: float = Query(0.0, ge=0.0, le=100.0),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ) -> dict:
     _get_dataset_or_404(db, dataset_id)
@@ -140,6 +153,8 @@ def get_process_graph(
         department=department,
         process_type=process_type,
         min_case_pct=min_case_pct,
+        start_date=start_date,
+        end_date=end_date,
     )
 
 
@@ -153,8 +168,12 @@ def list_cases(
     department: Optional[str] = Query(None),
     process_type: Optional[str] = Query(None),
     delayed_only: bool = Query(False),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ) -> dict:
+    from datetime import datetime, timezone
+
     _get_dataset_or_404(db, dataset_id)
     q = db.query(ProcessCase).filter(ProcessCase.dataset_id == dataset_id)
     if search:
@@ -167,6 +186,18 @@ def list_cases(
         q = q.filter(ProcessCase.process_type == process_type)
     if delayed_only:
         q = q.filter(ProcessCase.is_delayed.is_(True))
+    if start_date:
+        try:
+            sd = datetime.fromisoformat(start_date).replace(tzinfo=timezone.utc)
+            q = q.filter(ProcessCase.start_time >= sd)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            ed = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+            q = q.filter(ProcessCase.start_time <= ed)
+        except ValueError:
+            pass
 
     total = q.count()
     total_pages = max(1, math.ceil(total / page_size))

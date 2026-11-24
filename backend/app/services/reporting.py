@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Dataset, ReportRecord
 from app.services.ml_pipeline import get_predictions_dashboard
-from app.services.process_mining import compute_bottlenecks, compute_overview_metrics, compute_variants
+from app.services.process_mining import build_process_graph, compute_bottlenecks, compute_overview_metrics, compute_variants
 from app.services.recommendations import generate_recommendations
 
 
@@ -32,6 +32,90 @@ def _line(pdf: FPDF, height: float, text: str) -> None:
     pdf.multi_cell(pdf.epw, height, _sanitize_pdf_text(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
 
+def _draw_process_diagram(pdf: FPDF, graph: dict) -> None:
+    """Render a vector Directly-Follows Graph diagram directly onto the PDF canvas."""
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+    if not nodes:
+        _line(pdf, 6, "No process nodes available for diagram.")
+        return
+
+    xs = [n["x"] for n in nodes]
+    ys = [n["y"] for n in nodes]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    span_x = max(1.0, max_x - min_x)
+    span_y = max(1.0, max_y - min_y)
+
+    box_w = 28.0
+    box_h = 12.0
+    canvas_x = pdf.l_margin + 2.0
+    canvas_y = pdf.get_y() + 2.0
+    canvas_w = pdf.epw - 4.0
+    canvas_h = 68.0
+
+    # Ensure enough vertical space on current page
+    if canvas_y + canvas_h + 10 > pdf.h - pdf.b_margin:
+        pdf.add_page()
+        canvas_y = pdf.get_y() + 2.0
+
+    # Background architectural frame
+    pdf.set_fill_color(245, 243, 238)  # Porcelain #F5F3EE
+    pdf.set_draw_color(226, 221, 211)  # Hairline #E2DDD3
+    pdf.rect(canvas_x, canvas_y, canvas_w, canvas_h, style="FD")
+
+    # Map node centers into PDF coordinates
+    centers: dict[str, tuple[float, float]] = {}
+    usable_w = canvas_w - box_w - 8.0
+    usable_h = canvas_h - box_h - 8.0
+    for n in nodes:
+        nx = canvas_x + 4.0 + ((n["x"] - min_x) / span_x) * usable_w + box_w / 2.0
+        ny = canvas_y + 4.0 + ((n["y"] - min_y) / span_y) * usable_h + box_h / 2.0
+        centers[n["activity"]] = (nx, ny)
+
+    # Draw edges first
+    for e in edges:
+        if e["source"] not in centers or e["target"] not in centers:
+            continue
+        x1, y1 = centers[e["source"]]
+        x2, y2 = centers[e["target"]]
+        if e.get("is_bottleneck") or e.get("is_rework"):
+            pdf.set_draw_color(237, 157, 120)  # Apricot #ED9D78
+            pdf.set_line_width(0.5)
+        else:
+            pdf.set_draw_color(169, 182, 206)  # Soft Slate #A9B6CE
+            pdf.set_line_width(0.35)
+        pdf.line(x1, y1, x2, y2)
+
+    # Draw node boxes
+    for n in nodes:
+        cx, cy = centers[n["activity"]]
+        rx = cx - box_w / 2.0
+        ry = cy - box_h / 2.0
+        pdf.set_fill_color(255, 255, 255)
+        if n.get("is_bottleneck"):
+            pdf.set_draw_color(237, 157, 120)
+            pdf.set_line_width(0.6)
+        else:
+            pdf.set_draw_color(53, 77, 138)  # Indigo #354D8A
+            pdf.set_line_width(0.4)
+        pdf.rect(rx, ry, box_w, box_h, style="FD")
+
+        label = _sanitize_pdf_text(n["activity"][:16])
+        pdf.set_font("Helvetica", "B", 6.5)
+        pdf.set_text_color(36, 43, 58)
+        pdf.set_xy(rx + 1.0, ry + 1.8)
+        pdf.cell(box_w - 2.0, 3.5, label, align="C")
+
+        pdf.set_font("Helvetica", "", 5.5)
+        pdf.set_text_color(90, 102, 125)
+        pdf.set_xy(rx + 1.0, ry + 6.2)
+        pdf.cell(box_w - 2.0, 3.5, f"{n['case_count']} cases | {n['median_wait_to_next_hours']}h", align="C")
+
+    pdf.set_line_width(0.2)
+    pdf.set_xy(pdf.l_margin, canvas_y + canvas_h + 4.0)
+
+
 def generate_pdf_report(db: Session, dataset_id: int) -> Tuple[bytes, str, ReportRecord]:
     """Generate a comprehensive PDF management report and log a ReportRecord."""
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
@@ -39,6 +123,7 @@ def generate_pdf_report(db: Session, dataset_id: int) -> Tuple[bytes, str, Repor
         raise ValueError(f"Dataset {dataset_id} not found")
 
     overview = compute_overview_metrics(db, dataset_id)
+    graph = build_process_graph(db, dataset_id)
     bottlenecks = compute_bottlenecks(db, dataset_id)
     variants = compute_variants(db, dataset_id)
     ml_dash = get_predictions_dashboard(db, dataset_id)
@@ -75,10 +160,16 @@ def generate_pdf_report(db: Session, dataset_id: int) -> Tuple[bytes, str, Repor
         _line(pdf, 6, line)
     pdf.ln(3)
 
-    # 2. Bottleneck Rankings
+    # 2. Discovered Process Diagram
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(53, 77, 138)
-    _line(pdf, 8, "2. Bottleneck Stage Rankings")
+    _line(pdf, 8, "2. Discovered Process Flow Diagram")
+    _draw_process_diagram(pdf, graph)
+
+    # 3. Bottleneck Rankings
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(53, 77, 138)
+    _line(pdf, 8, "3. Bottleneck Stage Rankings")
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(36, 43, 58)
     for idx, bn in enumerate(bottlenecks[:6], start=1):
@@ -89,10 +180,10 @@ def generate_pdf_report(db: Session, dataset_id: int) -> Tuple[bytes, str, Repor
         _line(pdf, 5.5, line)
     pdf.ln(3)
 
-    # 3. Top Process Variants
+    # 4. Top Process Variants
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(53, 77, 138)
-    _line(pdf, 8, "3. Top Process Variants")
+    _line(pdf, 8, "4. Top Process Variants")
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(36, 43, 58)
     for var in variants[:5]:
@@ -100,10 +191,10 @@ def generate_pdf_report(db: Session, dataset_id: int) -> Tuple[bytes, str, Repor
         _line(pdf, 5, line)
     pdf.ln(3)
 
-    # 4. ML Delay Prediction Summary
+    # 5. ML Delay Prediction Summary
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(53, 77, 138)
-    _line(pdf, 8, "4. AI Delay Prediction Evaluation & Open Risk")
+    _line(pdf, 8, "5. AI Delay Prediction Evaluation & Open Risk")
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(36, 43, 58)
     for m in ml_dash.get("models", []):
@@ -118,10 +209,10 @@ def generate_pdf_report(db: Session, dataset_id: int) -> Tuple[bytes, str, Repor
     _line(pdf, 5.5, f"Open cases scored: {len(preds)} | High-risk cases (>=65% delay prob): {high_risk}")
     pdf.ln(3)
 
-    # 5. Suggested Improvements
+    # 6. Suggested Improvements
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(53, 77, 138)
-    _line(pdf, 8, "5. Evidence-Based Recommendations")
+    _line(pdf, 8, "6. Evidence-Based Recommendations")
     pdf.set_text_color(36, 43, 58)
     for rec in recs:
         pdf.set_font("Helvetica", "B", 9)
@@ -131,10 +222,10 @@ def generate_pdf_report(db: Session, dataset_id: int) -> Tuple[bytes, str, Repor
         _line(pdf, 5, f"Action: {rec['suggested_action']}")
         pdf.ln(1)
 
-    # 6. Analytical Limitations
+    # 7. Analytical Limitations
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(53, 77, 138)
-    _line(pdf, 8, "6. Analytical Limitations")
+    _line(pdf, 8, "7. Analytical Limitations")
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(36, 43, 58)
     limitations = [

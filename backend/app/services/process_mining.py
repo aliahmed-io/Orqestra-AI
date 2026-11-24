@@ -169,13 +169,29 @@ def build_process_graph(
     department: Optional[str] = None,
     process_type: Optional[str] = None,
     min_case_pct: float = 0.0,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
 ) -> dict[str, Any]:
     """Generate a deterministic Directly-Follows Graph (DFG) with layered layout coordinates."""
+    from datetime import datetime, timezone
+
     case_query = db.query(ProcessCase).filter(ProcessCase.dataset_id == dataset_id)
     if department and department != "All":
         case_query = case_query.filter(ProcessCase.department == department)
     if process_type and process_type != "All":
         case_query = case_query.filter(ProcessCase.process_type == process_type)
+    if start_date:
+        try:
+            sd = datetime.fromisoformat(start_date).replace(tzinfo=timezone.utc)
+            case_query = case_query.filter(ProcessCase.start_time >= sd)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            ed = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+            case_query = case_query.filter(ProcessCase.start_time <= ed)
+        except ValueError:
+            pass
 
     cases = case_query.all()
     case_ids = [c.id for c in cases]

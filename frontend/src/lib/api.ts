@@ -266,12 +266,21 @@ export const api = {
   getOverview: (datasetId: number) =>
     fetchJson<OverviewMetrics>(`/api/datasets/${datasetId}/overview`),
   getFilters: (datasetId: number) =>
-    fetchJson<{ departments: string[]; process_types: string[] }>(
-      `/api/datasets/${datasetId}/filters`
-    ),
+    fetchJson<{
+      departments: string[];
+      process_types: string[];
+      min_date: string | null;
+      max_date: string | null;
+    }>(`/api/datasets/${datasetId}/filters`),
   getGraph: (
     datasetId: number,
-    params?: { department?: string; process_type?: string; min_case_pct?: number }
+    params?: {
+      department?: string;
+      process_type?: string;
+      min_case_pct?: number;
+      start_date?: string;
+      end_date?: string;
+    }
   ) => {
     const qs = new URLSearchParams();
     if (params?.department && params.department !== "All") {
@@ -283,6 +292,8 @@ export const api = {
     if (params?.min_case_pct !== undefined && params.min_case_pct > 0) {
       qs.set("min_case_pct", String(params.min_case_pct));
     }
+    if (params?.start_date) qs.set("start_date", params.start_date);
+    if (params?.end_date) qs.set("end_date", params.end_date);
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return fetchJson<ProcessGraph>(`/api/datasets/${datasetId}/graph${suffix}`);
   },
@@ -296,6 +307,8 @@ export const api = {
       department?: string;
       process_type?: string;
       delayed_only?: boolean;
+      start_date?: string;
+      end_date?: string;
     }
   ) => {
     const qs = new URLSearchParams();
@@ -308,6 +321,8 @@ export const api = {
     if (params.process_type && params.process_type !== "All")
       qs.set("process_type", params.process_type);
     if (params.delayed_only) qs.set("delayed_only", "true");
+    if (params.start_date) qs.set("start_date", params.start_date);
+    if (params.end_date) qs.set("end_date", params.end_date);
     return fetchJson<PaginatedCases>(
       `/api/datasets/${datasetId}/cases?${qs.toString()}`
     );

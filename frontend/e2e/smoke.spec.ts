@@ -1,7 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test("end-to-end navigation across Orqestra AI pages", async ({ page }) => {
+test("end-to-end navigation from landing page across Orqestra AI workspace", async ({ page }) => {
   await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Understand the work behind the work." })
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Open Live Workspace" }).click();
   await expect(page.getByRole("heading", { name: "Executive Overview" })).toBeVisible();
   await expect(page.getByText("Total Cases").first()).toBeVisible();
 

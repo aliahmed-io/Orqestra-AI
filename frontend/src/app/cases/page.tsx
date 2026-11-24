@@ -20,6 +20,8 @@ export default function CaseExplorerPage() {
   const [status, setStatus] = useState("All");
   const [department, setDepartment] = useState("All");
   const [delayedOnly, setDelayedOnly] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +45,8 @@ export default function CaseExplorerPage() {
         status,
         department,
         delayed_only: delayedOnly,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
       })
       .then((res) => {
         if (!cancelled) setCasesPage(res);
@@ -53,7 +57,7 @@ export default function CaseExplorerPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeDatasetId, page, search, status, department, delayedOnly]);
+  }, [activeDatasetId, page, search, status, department, delayedOnly, startDate, endDate]);
 
   const inspectCase = async (caseId: number) => {
     if (activeDatasetId === null) return;
@@ -86,8 +90,8 @@ export default function CaseExplorerPage() {
       </div>
 
       {/* Filters */}
-      <Card className="flex flex-wrap items-center gap-4 px-5 py-4">
-        <div className="relative min-w-[200px] flex-1">
+      <Card className="flex flex-wrap items-center gap-3 px-5 py-4">
+        <div className="relative min-w-[180px] flex-1">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-ink-muted" />
           <input
             type="text"
@@ -134,6 +138,30 @@ export default function CaseExplorerPage() {
             </option>
           ))}
         </select>
+
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            aria-label="Start date"
+            value={startDate}
+            onChange={(e) => {
+              setPage(1);
+              setStartDate(e.target.value);
+            }}
+            className="h-9 rounded-md border border-hairline bg-porcelain px-2 text-xs text-ink"
+          />
+          <span className="text-xs text-ink-muted">to</span>
+          <input
+            type="date"
+            aria-label="End date"
+            value={endDate}
+            onChange={(e) => {
+              setPage(1);
+              setEndDate(e.target.value);
+            }}
+            className="h-9 rounded-md border border-hairline bg-porcelain px-2 text-xs text-ink"
+          />
+        </div>
 
         <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink">
           <input

@@ -14,6 +14,8 @@ export default function ProcessStudioPage() {
   const [department, setDepartment] = useState("All");
   const [processType, setProcessType] = useState("All");
   const [minCasePct, setMinCasePct] = useState(0);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [highlightCommon, setHighlightCommon] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +36,8 @@ export default function ProcessStudioPage() {
         department,
         process_type: processType,
         min_case_pct: minCasePct,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
       })
       .then((res) => {
         if (!cancelled) setGraph(res);
@@ -44,7 +48,7 @@ export default function ProcessStudioPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeDatasetId, department, processType, minCasePct]);
+  }, [activeDatasetId, department, processType, minCasePct, startDate, endDate]);
 
   return (
     <div className="space-y-5">
@@ -69,7 +73,7 @@ export default function ProcessStudioPage() {
       </div>
 
       {/* Filter & Density Controls */}
-      <Card className="flex flex-wrap items-center gap-6 px-5 py-3">
+      <Card className="flex flex-wrap items-center gap-5 px-5 py-3">
         <div className="flex items-center gap-2">
           <label
             htmlFor="studio-dept"
@@ -114,6 +118,35 @@ export default function ProcessStudioPage() {
           </select>
         </div>
 
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="studio-start"
+            className="text-xs font-medium text-ink-muted"
+          >
+            From
+          </label>
+          <input
+            id="studio-start"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="h-8 rounded-md border border-hairline bg-porcelain px-2 text-xs text-ink focus:border-indigo focus:outline-none"
+          />
+          <label
+            htmlFor="studio-end"
+            className="text-xs font-medium text-ink-muted"
+          >
+            To
+          </label>
+          <input
+            id="studio-end"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="h-8 rounded-md border border-hairline bg-porcelain px-2 text-xs text-ink focus:border-indigo focus:outline-none"
+          />
+        </div>
+
         <div className="flex items-center gap-3">
           <label
             htmlFor="studio-detail"
@@ -129,7 +162,7 @@ export default function ProcessStudioPage() {
             step={5}
             value={minCasePct}
             onChange={(e) => setMinCasePct(Number(e.target.value))}
-            className="w-28 accent-indigo"
+            className="w-24 accent-indigo"
           />
           <span className="font-mono-num text-xs font-medium text-ink">
             {minCasePct}%

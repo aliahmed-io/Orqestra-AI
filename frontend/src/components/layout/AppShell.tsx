@@ -25,7 +25,7 @@ const NAV_GROUPS = [
   {
     title: "Discovery",
     items: [
-      { href: "/", label: "Executive Overview", icon: LayoutDashboard },
+      { href: "/overview", label: "Executive Overview", icon: LayoutDashboard },
       { href: "/studio", label: "Process Discovery Studio", icon: Network },
       { href: "/cases", label: "Case Explorer", icon: ListChecks },
     ],
@@ -53,6 +53,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     useDataset();
   const [importOpen, setImportOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
 
   const renderNav = (onNavigate?: () => void) => (
     <nav className="flex-1 space-y-6 px-3 py-5" aria-label="Primary Navigation">
